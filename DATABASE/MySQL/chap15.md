@@ -1,0 +1,144 @@
+# order by 是如何工作的
+
+## 全字段排序
+
+示例语句：
+```sql
+select city,name,age from t where city='杭州' order by name limit 1000;
+```
+其中，Extra字段中的"Using filesoft"表示需要排序，<mark>MySQL会给每个线程分配一块内存用于排序，称为 sort_buffer。</mark>
+
+city索引的示意图如下所示：
+![image](/pictures/mysql/chap15/1.png)
+
+通常情况下，该语句的执行流程是：
+1. 初始化 sort_buffer，确定放入 name、city、age 这三个字段；
+2. 从索引 city 找到第一个满足 city=‘杭州’条件的主键 id，也就是图中的 ID_X；
+3. 到主键 id 索引取出整行，取 name、city、age 三个字段的值，存入 sort_buffer 中；
+4. 从索引 city 取下一个记录的主键 id；
+5. 重复步骤 3、4 直到不满足 city=‘杭州’条件为止，对应的主键 id 就是图中 ID_Y；
+6. 对 sort_buffer 中的数据按照字段 name 进行排序；
+7. 按照排序结果取前 1000 行返回给客户端。
+
+该执行流程如下图所示：
+![image](/pictures/mysql/chap15/2.png)
+
+- 图中“按 name 排序”这个动作，可能在内存中完成，也可能需要使用外部排序，这取决于排序所需的内存和参数 sort_buffer_size。
+- sort_buffer_size，就是 MySQL 为排序开辟的内存（sort_buffer）的大小。如果要排序的数据量小于 sort_buffer_size，排序就在内存中完成；但如果排序数据量太大，内存放不下，则不得不利用磁盘临时文件辅助排序。
+
+![image](/pictures/mysql/chap15/3.png)
+
+以上是OPTIMIZER_TRACE结果，可通过number_of_tmp_files 中看到是否使用了临时文件。
+
+- number_of_tmp_files 表示的是，排序过程中使用的临时文件数。
+- 外部排序一般使用归并排序算法，MySQL将需要排序的数据划分成若干份，通过归并排序的思想将多个有序文件合并为一个有序的大文件。
+- 如果 sort_buffer_size 超过了需要排序的数据量的大小，number_of_tmp_files 就是 0，表示排序可以直接在内存中完成
+- sort_buffer_size 越小，需要分成的份数越多，number_of_tmp_files 的值就越大。
+- 图中，examined_rows=4000，表示参与排序的行数是 4000 行。
+- sort_mode 里面的packed_additional_fields的意思是，排序过程对字符串做了“紧凑”处理。即使 name 字段的定义是 varchar(16)，在排序过程中还是要按照实际长度来分配空间的。
+
+## rowid排序
+
+全字段排序出现的问题：如果查询要返回的字段很多的话，那么 sort_buffer 里面要放的字段数太多，这样内存里能够同时放下的行数很少，要分成很多个临时文件，排序的性能会很差。<mark>因此，如果单行很大，排序效率不好。</mark>
+
+max_length_for_sort_data，是 MySQL 中专门控制用于排序的行数据的长度的一个参数。若单行的长度超过这个值，MySQL 就认为单行太大，要换一个算法。
+
+新算法——rowid排序中，放入sort_buffer 的字段，只有要排序的列（即 name 字段）和主键 id。
+
+整个执行流程如下所示：
+1. 初始化 sort_buffer，确定放入两个字段，即 name 和 id；
+2. 从索引 city 找到第一个满足 city=‘杭州’条件的主键 id，也就是图中的 ID_X；
+3. 到主键 id 索引取出整行，取 name、id 这两个字段，存入 sort_buffer 中；
+4. 从索引 city 取下一个记录的主键 id；
+5. 重复步骤 3、4 直到不满足 city=‘杭州’条件为止，也就是图中的 ID_Y；
+6. 对 sort_buffer 中的数据按照字段 name 进行排序；
+7. 遍历排序结果，取前 1000 行，并按照 id 的值回到原表中取出 city、name 和 age 三个字段返回给客户端。
+
+示意图如下所示：
+
+![image](/pictures/mysql/chap15/4.png)
+
+- 与全字段排序相比，rowid排序多访问了一次表 t 的主键索引，就是步骤 7。
+
+- 实际上 MySQL 服务端从排序后的 sort_buffer 中依次取出 id，然后到原表查到 city、name 和 age 这三个字段的结果，不需要在服务端再耗费内存存储结果，是直接返回给客户端的。
+
+那么相应的OPTIMIZER_TRACE 部分输出结果如下所示：
+
+![image](/pictures/mysql/chap15/5.png)
+
+- select @b-@a 这个语句的值变成 5000，因为在排序完成后，还要根据 id 去原表取值，由于语句是limit 1000，则多读1000行
+- sort_mode 变成了 ，表示参与排序的只有 name 和 id 这两个字段
+- number_of_tmp_files 变成 10 了，是因为这时候参与排序的行数虽然仍然是 4000 行，但是每一行都变小了，因此需要排序的总数据量就变小了，需要的临时文件也相应地变少了。
+
+## 全字段排序 VS rowid 排序
+
+两种排序方法中，MySQL的选择原则：
+- 如果 MySQL 实在是担心排序内存太小，会影响排序效率，才会采用 rowid 排序算法，这样排序过程中一次可以排序更多行，但是需要再回到原表去取数据。
+- 如果 MySQL 认为内存足够大，会优先选择全字段排序，把需要的字段都放到 sort_buffer 中，这样排序后就会直接从内存里面返回查询结果了，不用再回到原表去取数据。
+体现了MySQL的设计思想：**如果内存够，就要多利用内存，尽量减少磁盘访问**。
+
+对于 InnoDB 表来说，rowid 排序会要求回表多造成磁盘读，因此不会被优先选择。
+
+对于MySQL来说，排序是一种成本较高的操作，且**并不是所有的order by语句都需要排序操作**；MySQL生成临时表来做排序操作的原因是原本的数据是无序的。
+
+### 联合索引
+
+若保证从 city 这个索引上取出来的行，天然就是按照 name 递增排序的话，是不是就可以不用再排序了呢？
+
+![image](/pictures/mysql/chap15/6.png)
+
+以上是创建一个 city 和 name 的联合索引，对应的 SQL 语句是：
+```sql
+alter table t add index city_user(city, name);
+```
+
+在该索引中，可以用树搜索的方式定位到第一个满足 city=‘杭州’的记录，并且额外确保了，接下来按顺序取“下一条记录”的遍历过程中，只要 city 的值是杭州，name 的值就一定是有序的。
+
+因此查询过程的流程改为：
+1. 从索引 (city,name) 找到第一个满足 city=‘杭州’条件的主键 id；
+2. 到主键 id 索引取出整行，取 name、city、age 三个字段的值，作为结果集的一部分直接返回；
+3. 从索引 (city,name) 取下一个记录主键 id；
+4. 重复步骤 2、3，直到查到第 1000 条记录，或者是不满足 city=‘杭州’条件时循环结束。
+
+相应的示意图如下所示：
+
+![image](/pictures/mysql/chap15/7.png)
+
+- 该过程不需要临时表，也不需要排序。
+- 由于(city,name) 这个联合索引本身有序，所以这个查询也不用把 4000 行全都读一遍，只要找到满足条件的前 1000 条记录就可以退出了。
+
+对于上述的改动，我们可以采用覆盖索引来进一步简化这个查询流程：
+
+创建一个 city、name 和 age 的联合索引，对应的 SQL 语句就是：
+```sql
+alter table t add index city_user_age(city, name, age);
+```
+
+因此，查询过程的流程改为：
+1. 从索引 (city,name,age) 找到第一个满足 city=‘杭州’条件的记录，取出其中的 city、name 和 age 这三个字段的值，作为结果集的一部分直接返回；
+2. 从索引 (city,name,age) 取下一个记录，同样取出这三个字段的值，作为结果集的一部分直接返回；
+3. 重复执行步骤 2，直到查到第 1000 条记录，或者是不满足 city=‘杭州’条件时循环结束。
+
+相应的示意图如下所示：
+
+![image](/pictures/mysql/chap15/8.png)
+
+需要注意的是：为了每个查询能用上覆盖索引，就要把语句中涉及的字段都建上联合索引，**毕竟索引还是有维护代价的，这是一个需要权衡的决定**。
+
+## 问题
+
+假设你的表里面已经有了 city_name(city, name) 这个联合索引，然后你要查杭州和苏州两个城市中所有的市民的姓名，并且按名字排序，显示前 100 条记录。如果 SQL 查询语句是这么写的 ：
+```sql
+mysql> select * from t where city in ('杭州'," 苏州 ") order by name limit 100;
+```
+那么，这个语句执行的时候会有排序过程吗，为什么？
+
+- 虽然(city, name)联合索引中，对于单个city值，name是递增的
+- 但是，SQL语句不是单独查找一个city的值，而是同时查找两个值，因此满足条件的name就不是递增的了。所以该语句需要进行排序
+
+来避免进行排序的解决方案：将该语句拆成两条语句，执行流程如下：
+1. 执行 select * from t where city='杭州' order by name limit 100；该语句就不需要排序，用数组A来保存结果；
+2. 执行 select * from t where city='苏州' order by name limit 100；同样，用数组B保存结果；
+3. 可以用归并排序的思想将A和B两个数组合并为一个有序数组，并取得name最小的前100个值即可。
+
+
