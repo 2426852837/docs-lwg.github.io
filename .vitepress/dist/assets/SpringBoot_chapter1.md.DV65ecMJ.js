@@ -1,0 +1,1 @@
+import{_ as t,c as e,o as r}from"./chunks/framework.C70_P7hw.js";const m=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"SpringBoot/chapter1.md","filePath":"SpringBoot/chapter1.md"}'),a={name:"SpringBoot/chapter1.md"};function o(c,n,p,s,i,_){return r(),e("div")}const f=t(a,[["render",o]]);export{m as __pageData,f as default};
