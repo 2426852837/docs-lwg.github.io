@@ -1,5 +1,6 @@
 import { defineConfig } from "vitepress";
 import AutoNav from "vite-plugin-vitepress-auto-nav";
+import { resolve } from "path";
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "LWG Study",
@@ -28,6 +29,11 @@ export default defineConfig({
   vite: {
     server: {
       port: 6657,
+    },
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, './'),
+      },
     },
     plugins: [
       AutoNav({

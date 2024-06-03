@@ -1,16 +1,16 @@
 # 日志
 
-很多应用程序会使用其他日志框架，如Log4J 2、Logback等。
+很多应用程序会使用其他日志框架，如 Log4J 2、Logback 等。
 
-SLF4J和Commons Logging等日志门面提供了一个统一的API，利用这个API无须重写应用就可以替换日志框架。
+SLF4J 和 Commons Logging 等日志门面提供了一个统一的 API，利用这个 API 无须重写应用就可以替换日志框架。
 
-另外在java 9以后，java平台还有一个单独的轻量级日志系统，它不依赖于`java.logging`模块，这个系统只用于java API。
+另外在 java 9 以后，java 平台还有一个单独的轻量级日志系统，它不依赖于`java.logging`模块，这个系统只用于 java API。
 
 ## 日志管理器
 
 日志管理器负责配置日志记录，并将日志记录委托给适当的日志记录器。日志管理器实例通过`LogManager.getLogManager()`获取。
 
-日志记录的配置包括各个日志记录器（包括根日志记录器）的级别、处理器、格式化器等，具体参见：https://docs.oracle.com/cd/E57471_01/bigData.100/data_processing_bdd/src/rdp_logging_config.html 
+日志记录的配置包括各个日志记录器（包括根日志记录器）的级别、处理器、格式化器等，具体参见：https://docs.oracle.com/cd/E57471_01/bigData.100/data_processing_bdd/src/rdp_logging_config.html
 
 这些配置属性不是系统属性，因此不能调用`System.setProperty()`方法设置，可以通过以下两种方式来设置：1、日志管理器配置文件；2、程序代码中利用映射器`mapper`更新日志配置。
 
@@ -22,7 +22,7 @@ SLF4J和Commons Logging等日志门面提供了一个统一的API，利用这个
 
 如果想使用另一个配置文件，需要将系统属性`java.util.logging.config.file`设置为该文件的路径，有两种设置方式：
 
-（1）可以在启动java虚拟机时通过命令行设置：
+（1）可以在启动 java 虚拟机时通过命令行设置：
 
 ```shell
 java -D"java.util.logging.config.file"="D:\Code\JavaTest\x.txt" Test2
@@ -38,8 +38,6 @@ System.setProperty("java.util.logging.config.file", file);
 LogManager.getLogManager().readConfiguration();
 ```
 
-
-
 ### 利用映射器`mapper`更新日志配置
 
 ```java
@@ -47,17 +45,15 @@ LogManager.getLogManager().readConfiguration();
 LogManager.getLogManager().updateConfiguration(mapper);
 ```
 
-
-
 ## 日志记录器
 
 1、日志记录器用于实际记录日志消息，并将日志记录发送给一个或多个日志处理器进行处理。
 
-2、标准java日志框架中有一个根日志记录器（全局日志记录器），其名称为`""`，它是所有日志记录器的祖先。
+2、标准 java 日志框架中有一个根日志记录器（全局日志记录器），其名称为`""`，它是所有日志记录器的祖先。
 
 3、其他日志记录器需要手动创建。
 
-4、日志记录器具有父子关系。但和java包不同，日志记录器的父与子之间具有语义关系，例如`com.mycompany.mylib`就是`com.mycompany`的子日志记录器。
+4、日志记录器具有父子关系。但和 java 包不同，日志记录器的父与子之间具有语义关系，例如`com.mycompany.mylib`就是`com.mycompany`的子日志记录器。
 
 5、日志记录器的父与子之间将共享属性。例如，如果对日志记录器`com.mycompany`设置了日志级别，它的子日志记录器也会继承这个级别。
 
@@ -68,7 +64,7 @@ public class Test{
     Logger logger = Logger.getGlobal();
     // 创建或获取自定义的日志记录器（未被任何变量引用的日志记录器可能会被垃圾回收，因此用静态变量存储日志记录器的引用）
     private static final Logger myLogger = Logger.getLogger("com.mycompany.myapp");
-    
+
     public void main(String[] args){
         read("HTTP.txt", "utf-8");
         // 记录一条普通日志（方式1）
@@ -103,9 +99,9 @@ public class Test{
 
 1、日志处理器负责将日志记录输出到不同的目标位置，比如控制台、文件、数据库、远程服务器等。
 
-2、java标准库提供了一些内置的日志处理器，如：`ConsoleHandler`（将日志记录打印到控制台窗口）、`FileHandler`（将日志记录写入文件）、`StreamHandler`（将日志记录写入流中）、`SocketHandler`（将日志记录发送到指定的主机和端口）等，同时也允许用户创建自定义的处理器来满足特定需求。
+2、java 标准库提供了一些内置的日志处理器，如：`ConsoleHandler`（将日志记录打印到控制台窗口）、`FileHandler`（将日志记录写入文件）、`StreamHandler`（将日志记录写入流中）、`SocketHandler`（将日志记录发送到指定的主机和端口）等，同时也允许用户创建自定义的处理器来满足特定需求。
 
-3、一个日志记录器可以有0个、1个或多个处理器（`handler`私有属性表示）。
+3、一个日志记录器可以有 0 个、1 个或多个处理器（`handler`私有属性表示）。
 
 4、根日志记录器的处理器默认是`ConsoleHandler`，我们手动创建的日志记录器的处理器默认为`null`。可以显式地设置日志记录器的处理器。
 
@@ -134,8 +130,6 @@ logger.setUseParentHandlers(false);
 
 因此，一条日志记录可能会被多个处理器重复打印多次，这是正常且合理的。
 
-
-
 ### 文件处理器`FileHandler`
 
 ```java
@@ -145,7 +139,7 @@ var handler = new FileHandler();
 logger.addHandler(handler);
 ```
 
-默认情况下，记录会被格式化为XML。例如，一个典型的日志记录形式如下：
+默认情况下，记录会被格式化为 XML。例如，一个典型的日志记录形式如下：
 
 ```xml
 <record>
@@ -165,11 +159,7 @@ logger.addHandler(handler);
 
 文件管理器属性如下表所示。
 
-![1694122012594](D:\Summary\typora\pictures\1694122012594.png)
-
 1、文件名模式（`java.util.logging.FileHandler.pattern`），其含义如下表所示：
-
-![1694122369280(1)](D:\Summary\typora\pictures\1694122369280(1).png)
 
 2、如果多个应用程序（或者同一个应用程序的多个副本）使用同一个日志文件，就应该：
 
@@ -211,13 +201,13 @@ class WindowHandler extends StreamHandler{
 
 ### 格式化器
 
-`ConsoleHandler`类和`FileHandler`类可以生成文本和XML格式的日志记录。
+`ConsoleHandler`类和`FileHandler`类可以生成文本和 XML 格式的日志记录。
 
 1、也可以自定义格式，这需要扩展`Formatter`类并覆盖下面这个方法：`String format(LogRecord record)`。可以根据自己的需要以任何方式对记录中的信息进行格式化，并返回结果字符串。
 
 2、在`format`方法中，可能会调用下面这个方法：`String formatMessage(LogRecord record)`。这个方法对记录中的消息部分进行格式化，将替换参数并应用本地化处理。
 
-3、很多文件格式（如XML）需要在已格式化的记录的前后加上一个头部和尾部。为此，需要覆盖下面两个方法：`String getHead(Handler h)`和`String getTail(Handler h)`。
+3、很多文件格式（如 XML）需要在已格式化的记录的前后加上一个头部和尾部。为此，需要覆盖下面两个方法：`String getHead(Handler h)`和`String getTail(Handler h)`。
 
 4、最后，调用`setFormatter`方法将格式化器安装到处理器中。
 
@@ -235,15 +225,13 @@ boolean isLoggable(LogRecord record);
 
 2、然后，调用`setFilter`方法将过滤器安装到日志记录器或处理器中。日志记录器和处理器上都可以安装过滤器。
 
-
-
 ## 日志级别
 
-1、日志级别用于指示日志消息的重要性或严重程度。java有七个日志级别，按照严重程度依次为：
+1、日志级别用于指示日志消息的重要性或严重程度。java 有七个日志级别，按照严重程度依次为：
 
 （1）SEVERE（严重错误）；（2）WARNING（警告）；（3）INFO（信息性消息）；（4）CONFIG（配置信息）；（5）FINE（调试信息）；（6）FINER（调试信息）；（7）FINES（调试信息）。
 
-2、日志记录器默认的级别是INFO，也就是只有SEVERE、WARNING、INFO这三个级别的日志会被传送给处理器，其他级别的日志会被忽略。日志记录器的级别可以通过`logger.getLevel()`获得，通过`logger.setLevel(Level l)`设置。这种设置只会影响指定的日志记录器，不会影响其他日志记录器。
+2、日志记录器默认的级别是 INFO，也就是只有 SEVERE、WARNING、INFO 这三个级别的日志会被传送给处理器，其他级别的日志会被忽略。日志记录器的级别可以通过`logger.getLevel()`获得，通过`logger.setLevel(Level l)`设置。这种设置只会影响指定的日志记录器，不会影响其他日志记录器。
 
 ```java
 // 设置日志记录器logger的级别为FINE
@@ -254,11 +242,9 @@ logger.setLevel(Level.ALL);
 logger.setLevel(Level.OFF);
 ```
 
-3、日志处理器默认的级别也是INFO，也就是只有SEVERE、WARNING、INFO这三个级别的日志会被处理器输出，其他级别的日志会被忽略。日志处理器的级别可以通过`handler.getLevel()`获得，通过`handler.setLevel(Level l)`设置。这种设置只会影响指定的日志处理器，不会影响其他日志处理器。
+3、日志处理器默认的级别也是 INFO，也就是只有 SEVERE、WARNING、INFO 这三个级别的日志会被处理器输出，其他级别的日志会被忽略。日志处理器的级别可以通过`handler.getLevel()`获得，通过`handler.setLevel(Level l)`设置。这种设置只会影响指定的日志处理器，不会影响其他日志处理器。
 
 因此，==某一条日志记录要想被记录到目标位置（控制台窗口、文件、远程服务器、数据库等），它的级别必须满足：（1）高于等于日志记录器的级别；（2）且高于日志处理器的级别。==
-
-
 
 ## 调试技巧
 
@@ -266,7 +252,7 @@ logger.setLevel(Level.OFF);
 
 可以在每个类中放置一个单独的`main`方法。这样就可以提供一个单元测试桩（stub）,能够独立测试类。
 
-更进一步，可以使用一个非常流行的单元测试框架JUnit（http://junit.org）。利用它可以很容易地组织测试用例套件。只要对类做了修改，就需要运行测试。一旦发现bug，还要再补充另一个测试用例。
+更进一步，可以使用一个非常流行的单元测试框架 JUnit（http://junit.org）。利用它可以很容易地组织测试用例套件。只要对类做了修改，就需要运行测试。一旦发现bug，还要再补充另一个测试用例。
 
 2、==日志代理==
 
@@ -319,32 +305,32 @@ Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler(){
 
 6、==观察类的加载过程==
 
-启动java虚拟机时可以使用`-verbose`标志。这种方法对诊断类路径会很有帮助。
+启动 java 虚拟机时可以使用`-verbose`标志。这种方法对诊断类路径会很有帮助。
 
 7、`javac -Xlint`选项
 
-启动javac编译器时，`-Xlint`选项告诉编译器找出常见的问题代码，这可以找出代码中有问题但不违背语法规则的构造。
+启动 javac 编译器时，`-Xlint`选项告诉编译器找出常见的问题代码，这可以找出代码中有问题但不违背语法规则的构造。
 
 ```shell
 javac -Xlint MyProgram.java
 ```
 
-8、==jconsole图形工具==
+8、==jconsole 图形工具==
 
-==java虚拟机增加了对java应用程序的监控和管理支持，允许在虚拟机中安装代理来跟踪内存消耗、线程使用、类加载等情况。这些特性对于规模很大而且长时间运行的java程序（如应用服务器）尤其重要。==
+==java 虚拟机增加了对 java 应用程序的监控和管理支持，允许在虚拟机中安装代理来跟踪内存消耗、线程使用、类加载等情况。这些特性对于规模很大而且长时间运行的 java 程序（如应用服务器）尤其重要。==
 
-作为展示这些功能的一个例子，jdk提供了一个名为jconsole（www.oracle.com/technetwork/articles/java/jconsole-1564139.html）的图形工具，可以显示有关虚拟机性能的统计结果。
+作为展示这些功能的一个例子，jdk 提供了一个名为 jconsole（www.oracle.com/technetwork/articles/java/jconsole-1564139.html）的图形工具，可以显示有关虚拟机性能的统计结果。
 
-启动你的java程序，然后启动jconsole，可以从正在运行的java程序列表中选择你的程序。控制台会给出有关运行程序的大量信息。
+启动你的 java 程序，然后启动 jconsole，可以从正在运行的 java 程序列表中选择你的程序。控制台会给出有关运行程序的大量信息。
 
-9、==java任务控制器==
+9、==java 任务控制器==
 
-java任务控制器（Java Mission Control）是一个专业级性能分析和诊断工具，包含在oracle jdk中，可以免费用于开发。
+java 任务控制器（Java Mission Control）是一个专业级性能分析和诊断工具，包含在 oracle jdk 中，可以免费用于开发。
 
-如果在生产环境中使用则需要有商业授权。目前OpenJDK中提供了一个开源版本。
+如果在生产环境中使用则需要有商业授权。目前 OpenJDK 中提供了一个开源版本。
 
-与jconsole类似，Java任务控制器可以关联到正在运行的java虚拟机。
+与 jconsole 类似，Java 任务控制器可以关联到正在运行的 java 虚拟机。
 
-Java任务控制器还能分析java飞行记录器（Java Flight Recorder）的输出。java飞行记录器可以从一个正在运行的java应用程序收集诊断和性能分析数据。
+Java 任务控制器还能分析 java 飞行记录器（Java Flight Recorder）的输出。java 飞行记录器可以从一个正在运行的 java 应用程序收集诊断和性能分析数据。
 
 有关这些工具的更多信息参见 https://docs.oracle.com/javacomponents/index.html 。
