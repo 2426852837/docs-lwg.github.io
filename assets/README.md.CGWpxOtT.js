@@ -1,0 +1,5 @@
+import{_ as a,c as s,o as e,a1 as n}from"./chunks/framework.BzbwRryB.js";const m=JSON.parse('{"title":"JAVA 八股文档","description":"","frontmatter":{},"headers":[],"relativePath":"README.md","filePath":"README.md"}'),t={name:"README.md"},p=n(`<h1 id="java-八股文档" tabindex="-1">JAVA 八股文档 <a class="header-anchor" href="#java-八股文档" aria-label="Permalink to &quot;JAVA 八股文档&quot;">​</a></h1><p>后续会更新更多相关内容</p><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>npm run docs:build</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>git push origin --delete docs</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>git subtree push --prefix .vitepress/dist origin docs</span></span></code></pre></div>`,3),i=[p];function o(c,l,r,d,_,h){return e(),s("div",null,i)}const A=a(t,[["render",o]]);export{m as __pageData,A as default};
