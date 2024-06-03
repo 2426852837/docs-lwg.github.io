@@ -5,6 +5,7 @@ import { resolve } from "path";
 export default defineConfig({
   title: "LWG Study",
   description: "A VitePress Site",
+  base: '/docs-lwg.github.io/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     // nav: [
@@ -27,7 +28,6 @@ export default defineConfig({
     ],
   },
   vite: {
-    base: '/docs-lwg.github.io/',
     server: {
       port: 6657,
     },

@@ -5,5 +5,7 @@
 ```
 npm run docs:build
 
+git push origin --delete docs
+
 git subtree push --prefix .vitepress/dist origin docs
 ```
