@@ -27,7 +27,7 @@ export default defineConfig({
     ],
   },
   vite: {
-    base: "./",
+    base: '/docs-lwg.github.io/',
     server: {
       port: 6657,
     },
