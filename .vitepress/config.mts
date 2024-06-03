@@ -27,13 +27,9 @@ export default defineConfig({
     ],
   },
   vite: {
+    base: "./",
     server: {
       port: 6657,
-    },
-    resolve: {
-      alias: {
-        '@': resolve(__dirname, './'),
-      },
     },
     plugins: [
       AutoNav({
